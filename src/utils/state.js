@@ -27,7 +27,12 @@ const defaultState = {
     defaultCountry: config.defaultCountry
 };
 
-// ... (dir check) ...
+// Ensure data directory exists
+const dataDir = path.dirname(config.stateFilePath);
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+    console.log('[State] Created data directory:', dataDir);
+}
 
 /**
  * Load state from file
