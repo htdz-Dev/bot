@@ -457,19 +457,37 @@ async function handleTest(interaction) {
  * Handle /ramadan schedule
  */
 async function handleSchedule(interaction) {
+    const cityName = interaction.options.getString('name');
+    const countryName = interaction.options.getString('country');
+
     await interaction.deferReply();
 
     try {
-        const state = getState();
-        const city = state.city || 'Algiers';
-        const country = state.country || 'Algeria';
+        const globalState = getState();
+        let city, country;
+
+        if (cityName) {
+            // User provided specific city override
+            city = cityName;
+            country = countryName || 'Algeria';
+        } else {
+            // Use current channel config or default
+            const channelConfig = getChannelConfig(interaction.channelId);
+            city = channelConfig ? channelConfig.city : (globalState.defaultCity || 'Algiers');
+            country = channelConfig ? channelConfig.country : (globalState.defaultCountry || 'Algeria');
+        }
 
         const prayerTimes = await getPrayerTimes(city, country);
+        if (!prayerTimes) {
+            await interaction.editReply({ content: `⚠️ لم يتم العثور على أوقات الصلاة لمدينة **${city}, ${country}**. يرجى التأكد من الاسم.` });
+            return;
+        }
+
         const hijriDate = await getFormattedHijriDate();
 
-        // Get Greogrian Date formatted in Arabic if possible or English
+        // Greogrian Date formatted in French/Arabic
         const now = new Date();
-        const gregorianDate = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const gregorianDate = now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
         const imageBuffer = await generateImsakiyah(prayerTimes, hijriDate, gregorianDate, city);
         const attachment = new AttachmentBuilder(imageBuffer, { name: 'imsakiyah.png' });
