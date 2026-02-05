@@ -53,7 +53,17 @@ const data = new SlashCommandBuilder()
     .addSubcommand(subcommand =>
         subcommand
             .setName('schedule')
-            .setDescription('عرض إمساكية اليوم المصورة'))
+            .setDescription('عرض إمساكية اليوم المصورة')
+            .addStringOption(option =>
+                option
+                    .setName('name')
+                    .setDescription('اسم المدينة (بالإنجليزية)')
+                    .setRequired(false))
+            .addStringOption(option =>
+                option
+                    .setName('country')
+                    .setDescription('اسم الدولة (بالإنجليزية)')
+                    .setRequired(false)))
     .addSubcommand(subcommand =>
         subcommand
             .setName('test')
