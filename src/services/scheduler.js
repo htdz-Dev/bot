@@ -244,22 +244,39 @@ async function scheduleRamadanMessages() {
     }
 
     const state = getState();
-    // Default to handling at least the global default city for legacy or default purposes if no channels
-    // But ideally we iterate state.channels
-    const channels = state.channels || [];
+    // Start with explicitly configured channels
+    const allChannels = [...(state.channels || [])];
 
     // Fallback if no channels registered but ramadanActive is true (shouldn't happen with new logic, but safety)
-    if (channels.length === 0 && (state.city || config.defaultCity)) {
-        channels.push({
+    if (allChannels.length === 0 && (state.city || config.defaultCity)) {
+        allChannels.push({
             channelId: state.channelId || process.env.CHANNEL_ID,
             city: state.city || config.defaultCity,
             country: state.country || config.defaultCountry
         });
     }
 
-    console.log(`[Scheduler] Scheduling messages for ${channels.length} channels...`);
+    // Add target cities to main channel if configured in config.js (Global Subscriptions)
+    if (config.targetCities && config.targetCities.length > 0) {
+        const mainChannelId = state.channelId || process.env.CHANNEL_ID;
+        if (mainChannelId) {
+            config.targetCities.forEach(cityConfig => {
+                // Check if this city is already covered by a manual channel config
+                const exists = allChannels.find(c => c.channelId === mainChannelId && c.city === cityConfig.city);
+                if (!exists) {
+                    allChannels.push({
+                        channelId: mainChannelId,
+                        city: cityConfig.city,
+                        country: cityConfig.country
+                    });
+                }
+            });
+        }
+    }
 
-    for (const channelConfig of channels) {
+    console.log(`[Scheduler] Scheduling messages for ${allChannels.length} channel-city combinations...`);
+
+    for (const channelConfig of allChannels) {
         if (!channelConfig.channelId) continue;
 
         try {

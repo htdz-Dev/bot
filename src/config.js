@@ -3,6 +3,15 @@ module.exports = {
     defaultCity: 'Algiers',
     defaultCountry: 'Algeria',
 
+    // List of cities to send alerts for (in the main channel)
+    // Format: { city: 'Name', country: 'Country' }
+    targetCities: [
+        { city: 'Algiers', country: 'Algeria' },
+        { city: 'Montreal', country: 'Canada' },
+        { city: 'Marseille', country: 'France' },
+        { city: 'Mons', country: 'Belgium' }
+    ],
+
     // Aladhan API settings
     aladhanApiUrl: 'https://api.aladhan.com/v1',
 
