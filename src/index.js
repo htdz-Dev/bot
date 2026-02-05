@@ -47,7 +47,7 @@ async function registerCommands() {
 }
 
 // Handle ready event
-client.once('ready', async () => {
+client.once('clientReady', async () => {
     console.log(`\n🌙 ═══════════════════════════════════════`);
     console.log(`   بوت رمضان المبارك`);
     console.log(`   Logged in as: ${client.user.tag}`);
