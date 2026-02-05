@@ -16,10 +16,8 @@ async function getPrayerTimes(city = null, country = null, date = new Date()) {
 
     const dateStr = date.toISOString().split('T')[0];
 
-    // Check cache first
-    if (state.cachedPrayerDate === dateStr && state.cachedPrayerTimes) {
-        return state.cachedPrayerTimes;
-    }
+    // Caching removed to support multi-city correctly
+    // (To implement proper caching, we'd need a map Keyed by "City-Country-Date")
 
     try {
         const day = date.getDate();
@@ -27,24 +25,22 @@ async function getPrayerTimes(city = null, country = null, date = new Date()) {
         const year = date.getFullYear();
 
         const url = `${config.aladhanApiUrl}/timingsByCity/${day}-${month}-${year}`;
+
+        // Dynamic method selection
+        let method = 3; // Default: Muslim World League (good for Europe)
+        if (country.toLowerCase().includes('algeria')) method = 19; // Egypt (for North Africa)
+        if (country.toLowerCase().includes('canada') || country.toLowerCase().includes('usa')) method = 2; // ISNA
+
         const response = await axios.get(url, {
             params: {
                 city: city,
                 country: country,
-                method: 19 // Egypt General Authority of Survey (good for Algeria)
+                method: method
             }
         });
 
         if (response.data && response.data.code === 200) {
-            const timings = response.data.data.timings;
-
-            // Cache the results
-            updateState({
-                cachedPrayerTimes: timings,
-                cachedPrayerDate: dateStr
-            });
-
-            return timings;
+            return response.data.data.timings;
         }
 
         throw new Error('Invalid API response');
