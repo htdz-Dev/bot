@@ -1,0 +1,26 @@
+{
+  "name": "discord-ramadan-bot",
+  "version": "1.0.0",
+  "description": "بوت Discord احترافي لشهر رمضان المبارك",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "ramadan",
+    "islamic",
+    "prayer-times"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.7",
+    "canvas": "^3.2.1",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.1",
+    "node-cron": "^3.0.3"
+  }
+}

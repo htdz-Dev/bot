@@ -1,0 +1,31 @@
+{
+  "ramadanActive": false,
+  "countdownEnabled": true,
+  "channels": [
+    {
+      "channelId": "1468951235259404339",
+      "city": "Algiers",
+      "country": "Algeria",
+      "lastIftarSent": null,
+      "lastSuhoorSent": null
+    }
+  ],
+  "defaultCity": "Algiers",
+  "defaultCountry": "Algeria",
+  "lastCountdownSent": "2026-02-05",
+  "lastNightOfDoubtSent": null,
+  "cachedPrayerTimes": {
+    "Fajr": "06:18",
+    "Sunrise": "07:46",
+    "Dhuhr": "13:02",
+    "Asr": "15:54",
+    "Sunset": "18:17",
+    "Maghrib": "18:17",
+    "Isha": "19:40",
+    "Imsak": "06:08",
+    "Midnight": "01:02",
+    "Firstthird": "22:47",
+    "Lastthird": "03:17"
+  },
+  "cachedPrayerDate": "2026-02-05"
+}
