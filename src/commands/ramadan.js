@@ -76,9 +76,21 @@ const data = new SlashCommandBuilder()
                     .addChoices(
                         { name: '🍽️ رسالة الفطور', value: 'iftar' },
                         { name: '🌙 رسالة السحور', value: 'suhoor' },
+                        { name: '🍲 سحور مبكر', value: 'earlySuhoor' },
+                        { name: '🕌 تراويح', value: 'taraweeh' },
                         { name: '⏳ العد التنازلي', value: 'countdown' },
                         { name: '🔍 ليلة الشك', value: 'nightOfDoubt' }
-                    )));
+                    ))
+            .addStringOption(option =>
+                option
+                    .setName('name')
+                    .setDescription('اسم المدينة للاختبار')
+                    .setRequired(false))
+            .addStringOption(option =>
+                option
+                    .setName('country')
+                    .setDescription('اسم الدولة للاختبار')
+                    .setRequired(false)));
 
 /**
  * Execute the ramadan command
@@ -399,19 +411,29 @@ async function handleTest(interaction) {
     }
 
     const testType = interaction.options.getString('type');
+    const cityName = interaction.options.getString('name');
+    const countryName = interaction.options.getString('country');
+
     await interaction.deferReply();
 
     try {
         const state = getState();
+        // Use provided city or fallback to current channel's city or default
+        const channelConfig = getChannelConfig(interaction.channelId);
+        const city = cityName || (channelConfig ? channelConfig.city : (state.city || 'Algiers'));
+        const country = countryName || (channelConfig ? channelConfig.country : (state.country || 'Algeria'));
+
         const hijriDate = await getFormattedHijriDate();
         let files = [];
 
+        // Fetch prayer times for the specific test city
+        const prayerTimes = await getPrayerTimes(city, country);
+
         switch (testType) {
             case 'iftar':
-                const prayerTimesIftar = await getPrayerTimes();
                 const resultIftar = createRamadanEmbed('iftar', {
-                    prayerTime: prayerTimesIftar.Maghrib,
-                    city: state.city,
+                    prayerTime: prayerTimes.Maghrib,
+                    city: city,
                     hijriDate: hijriDate
                 });
                 embed = resultIftar.embed;
@@ -419,14 +441,33 @@ async function handleTest(interaction) {
                 break;
 
             case 'suhoor':
-                const prayerTimesSuhoor = await getPrayerTimes();
                 const resultSuhoor = createRamadanEmbed('suhoor', {
-                    prayerTime: prayerTimesSuhoor.Fajr,
-                    city: state.city,
+                    prayerTime: prayerTimes.Fajr,
+                    city: city,
                     hijriDate: hijriDate
                 });
                 embed = resultSuhoor.embed;
                 files = resultSuhoor.files;
+                break;
+
+            case 'earlySuhoor':
+                const resultEarly = createRamadanEmbed('earlySuhoor', {
+                    prayerTime: prayerTimes.Fajr, // Or calculate -1h if needed specifically shown
+                    city: city,
+                    hijriDate: hijriDate
+                });
+                embed = resultEarly.embed;
+                files = resultEarly.files;
+                break;
+
+            case 'taraweeh':
+                const resultTaraweeh = createRamadanEmbed('taraweeh', {
+                    prayerTime: prayerTimes.Isha,
+                    city: city,
+                    hijriDate: hijriDate
+                });
+                embed = resultTaraweeh.embed;
+                files = resultTaraweeh.files;
                 break;
 
             case 'countdown':
@@ -439,7 +480,7 @@ async function handleTest(interaction) {
             case 'nightOfDoubt':
                 const resultNoD = createRamadanEmbed('nightOfDoubt', {
                     hijriDate: hijriDate,
-                    city: state.city
+                    city: city
                 });
                 embed = resultNoD.embed;
                 files = resultNoD.files;
