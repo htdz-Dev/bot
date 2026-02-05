@@ -29,7 +29,7 @@ function initScheduler(discordClient) {
 
     // Schedule countdown reminder at 18:00 daily (before Ramadan only)
     // Algiers timezone
-    eveningCountdownJob = cron.schedule('02 18 * * *', async () => {
+    eveningCountdownJob = cron.schedule('05 18 * * *', async () => {
         console.log('[Scheduler] ⏰ Countdown reminder triggered at 18:00');
         await sendCountdownOrNightOfDoubt();
     }, {
