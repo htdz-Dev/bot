@@ -274,7 +274,7 @@ async function handleCountdownToggle(interaction, enabled) {
         const statusText = enabled ? 'مفعّل' : 'متوقف';
 
         await interaction.reply({
-            content: `${statusEmoji} **التذكير التلقائي بالعد التنازلي: ${statusText}**\n\nسيتم إرسال رسالة العد التنازلي تلقائياً كل يوم الساعة 9:00 صباحاً و 16:00 مساءً ${enabled ? '✨' : '(متوقف حالياً)'}`,
+            content: `${statusEmoji} **التذكير التلقائي بالعد التنازلي: ${statusText}**\n**Rappel automatique du compte à rebours: ${enabled ? 'Activé' : 'Désactivé'}**\n\nسيتم إرسال رسالة العد التنازلي يومياً الساعة 18:00\nLe message sera envoyé chaque jour à 18h00 ${enabled ? '✨' : ''}`,
             ephemeral: false
         });
 
