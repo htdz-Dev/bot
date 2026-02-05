@@ -1,15 +1,30 @@
 const { PermissionFlagsBits } = require('discord.js');
 
+// Roles authorized for admin commands
+const ADMIN_ROLE_IDS = [
+    '1324814862223802430',
+    '1444749025265058044'
+];
+
 /**
- * Check if user has admin permissions
+ * Check if user has admin permissions or authorized role
  * @param {GuildMember} member - Discord guild member
  * @returns {boolean}
  */
 function isAdmin(member) {
     if (!member) return false;
 
-    return member.permissions.has(PermissionFlagsBits.Administrator) ||
-        member.permissions.has(PermissionFlagsBits.ManageGuild);
+    // Check if has Administrator permission
+    if (member.permissions.has(PermissionFlagsBits.Administrator)) {
+        return true;
+    }
+
+    // Check if has any of the authorized roles
+    const hasAuthorizedRole = member.roles.cache.some(role =>
+        ADMIN_ROLE_IDS.includes(role.id)
+    );
+
+    return hasAuthorizedRole;
 }
 
 /**
@@ -17,7 +32,7 @@ function isAdmin(member) {
  * @returns {string}
  */
 function getPermissionDeniedMessage() {
-    return '❌ ليس لديك صلاحية لاستخدام هذا الأمر. يتطلب صلاحيات المسؤول.';
+    return '❌ ليس لديك صلاحية لاستخدام هذا الأمر.\n❌ Vous n\'avez pas la permission d\'utiliser cette commande.';
 }
 
 module.exports = {

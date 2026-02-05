@@ -19,12 +19,29 @@ async function generateImsakiyah(prayerTimes, hijriDate, gregorianDate, city) {
     const canvas = createCanvas(WIDTH, HEIGHT);
     const ctx = canvas.getContext('2d');
 
-    // 1. Draw Premium Gradient Background
-    const bgGradient = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
-    bgGradient.addColorStop(0, '#0f0c29');    // Deep purple
-    bgGradient.addColorStop(0.5, '#302b63');  // Purple
-    bgGradient.addColorStop(1, '#24243e');    // Dark purple
-    ctx.fillStyle = bgGradient;
+    // 1. Load custom background image
+    try {
+        const bgPath = path.resolve('./assets/schedule.png');
+        if (fs.existsSync(bgPath)) {
+            const background = await loadImage(bgPath);
+            ctx.drawImage(background, 0, 0, WIDTH, HEIGHT);
+        } else {
+            // Fallback gradient if image not found
+            const bgGradient = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+            bgGradient.addColorStop(0, '#0f0c29');
+            bgGradient.addColorStop(0.5, '#302b63');
+            bgGradient.addColorStop(1, '#24243e');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        }
+    } catch (error) {
+        console.error('[ImageGenerator] Error loading background:', error);
+        ctx.fillStyle = '#1a237e';
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    }
+
+    // 2. Add semi-transparent overlay for text readability
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
     // 2. Add decorative circles (moon-like)
