@@ -4,6 +4,7 @@ const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord
 const { initScheduler, scheduleRamadanMessages } = require('./services/scheduler');
 const { isRamadanActive, getState } = require('./utils/state');
 const ramadanCommand = require('./commands/ramadan');
+const testadhanCommand = require('./commands/testadhan');
 
 // Validate environment variables
 if (!process.env.DISCORD_TOKEN) {
@@ -28,6 +29,7 @@ const client = new Client({
 // Commands collection
 client.commands = new Collection();
 client.commands.set(ramadanCommand.data.name, ramadanCommand);
+client.commands.set(testadhanCommand.data.name, testadhanCommand);
 
 // Register slash commands
 async function registerCommands() {
@@ -38,7 +40,7 @@ async function registerCommands() {
 
         await rest.put(
             Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
-            { body: [ramadanCommand.data.toJSON()] }
+            { body: [ramadanCommand.data.toJSON(), testadhanCommand.data.toJSON()] }
         );
 
         console.log('✅ Slash commands registered successfully');
