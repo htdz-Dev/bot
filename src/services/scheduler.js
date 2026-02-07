@@ -4,6 +4,7 @@ const { getFormattedHijriDate, getDaysUntilRamadan, isNightOfDoubt } = require('
 const { isRamadanActive, wasMessageSentToday, markMessageSent, getState, updateState } = require('../utils/state');
 const { createRamadanEmbed, createCountdownEmbed } = require('../utils/messages');
 const { generateImsakiyah } = require('./imageGenerator');
+const { playAdhan } = require('./voiceService');
 const { AttachmentBuilder } = require('discord.js');
 
 
@@ -419,6 +420,12 @@ async function sendIftarMessage(channel, channelConfig) {
         });
 
         await channel.send({ content: '@everyone', embeds: [embed], files: files });
+
+        // Play Adhan
+        if (channel.guild) {
+            playAdhan(channel.guild).catch(console.error);
+        }
+
         markMessageSent('iftar', channel.id);
         console.log(`[Scheduler] Iftar sent to ${channelConfig.city}`);
     } catch (error) {

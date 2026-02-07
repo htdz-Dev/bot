@@ -5,7 +5,9 @@ const { createStatusEmbed, createRamadanEmbed, createCountdownEmbed } = require(
 const { getPrayerTimes } = require('../services/prayerTimes');
 const { getFormattedHijriDate, getDaysUntilRamadan, isNightOfDoubt, getExpectedRamadanDateFormatted, getHijriDate } = require('../services/hijriDate');
 const { scheduleRamadanMessages, cancelScheduledJobs } = require('../services/scheduler');
+
 const { generateImsakiyah } = require('../services/imageGenerator');
+const { playAdhan } = require('../services/voiceService');
 const { AttachmentBuilder } = require('discord.js');
 
 // Slash command definition
@@ -438,6 +440,11 @@ async function handleTest(interaction) {
                 });
                 embed = resultIftar.embed;
                 files = resultIftar.files;
+
+                // Trigger Adhan for verification
+                if (interaction.guild) {
+                    playAdhan(interaction.guild).catch(console.error);
+                }
                 break;
 
             case 'suhoor':
