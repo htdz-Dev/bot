@@ -4,11 +4,16 @@ const {
     createAudioResource,
     AudioPlayerStatus,
     VoiceConnectionStatus,
-    entersState
+    entersState,
+    StreamType
 } = require('@discordjs/voice');
 const path = require('path');
 const fs = require('fs');
+const { createReadStream } = require('fs');
 const { ChannelType } = require('discord.js');
+const ffmpegPath = require('ffmpeg-static');
+// Explicitly set FFMPEG_PATH for prism-media to find it
+process.env.FFMPEG_PATH = ffmpegPath;
 
 /**
  * Play Adhan in the voice channel with the most members
@@ -65,17 +70,23 @@ async function playAdhan(guild) {
             return;
         }
 
-        const resource = createAudioResource(resourcePath);
+        const resource = createAudioResource(createReadStream(resourcePath), {
+            inputType: StreamType.Arbitrary
+        });
 
         connection.subscribe(player);
 
-        // Small delay to ensure connection is stable
+        // precise delay
         setTimeout(() => {
             player.play(resource);
-            console.log(`[Voice] Playing Adhan in ${targetChannel.name}`);
+            console.log(`[Voice] Playing Adhan in ${targetChannel.name} with Arbitrary stream type`);
         }, 1000);
 
-        console.log(`[Voice] Playing Adhan in ${targetChannel.name}`);
+        player.on('stateChange', (oldState, newState) => {
+            console.log(`[Voice] Audio player transitioned from ${oldState.status} to ${newState.status}`);
+        });
+
+        console.log(`[Voice] Player initialized inside ${targetChannel.name}`);
 
         // Leave when finished
         player.on(AudioPlayerStatus.Idle, () => {
