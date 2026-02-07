@@ -11,10 +11,14 @@ const {
 const path = require('path');
 const fs = require('fs');
 const { ChannelType } = require('discord.js');
+const { spawn } = require('child_process');
 
 // Set FFmpeg path BEFORE any audio operations
 const ffmpegPath = require('ffmpeg-static');
 process.env.FFMPEG_PATH = ffmpegPath;
+
+// Force prism-media to use our ffmpeg
+const prism = require('prism-media');
 
 /**
  * Play Adhan in the voice channel with the most members
@@ -51,6 +55,13 @@ async function playAdhan(guild) {
             }
         });
 
+        // If still no channel with members, just pick the first joinable one
+        if (!targetChannel) {
+            targetChannel = guild.channels.cache.find(
+                ch => ch.type === ChannelType.GuildVoice && ch.joinable
+            );
+        }
+
         if (!targetChannel) {
             console.log(`[Voice] No voice channel found in ${guild.name}`);
             return;
@@ -65,9 +76,10 @@ async function playAdhan(guild) {
         if (existingConnection) {
             console.log('[Voice] Destroying existing connection');
             existingConnection.destroy();
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        // Create new connection with selfDeaf: false so bot can transmit audio
+        // Create new connection
         const connection = joinVoiceChannel({
             channelId: targetChannel.id,
             guildId: guild.id,
@@ -87,13 +99,16 @@ async function playAdhan(guild) {
 
         // Wait for connection to be ready
         console.log('[Voice] Waiting for connection to be ready...');
-        await entersState(connection, VoiceConnectionStatus.Ready, 10000);
+        await entersState(connection, VoiceConnectionStatus.Ready, 15000);
         console.log('[Voice] Connection is ready!');
 
-        // Create audio player with proper configuration
+        // Small delay to ensure connection is stable
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Create audio player
         const player = createAudioPlayer({
             behaviors: {
-                noSubscriber: NoSubscriberBehavior.Play // Keep playing even without subscribers temporarily
+                noSubscriber: NoSubscriberBehavior.Play
             }
         });
 
@@ -108,19 +123,50 @@ async function playAdhan(guild) {
         }
 
         const stats = fs.statSync(resourcePath);
-        console.log(`[Voice] Audio file size: ${stats.size} bytes`);
+        console.log(`[Voice] Audio file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
-        // Create audio resource from file path directly (more reliable than stream)
-        const resource = createAudioResource(resourcePath, {
+        // Create audio resource using FFmpeg transcoder for better compatibility
+        console.log('[Voice] Creating audio resource with FFmpeg transcoder...');
+
+        const ffmpegProcess = spawn(ffmpegPath, [
+            '-i', resourcePath,
+            '-analyzeduration', '0',
+            '-loglevel', '0',
+            '-f', 's16le',
+            '-ar', '48000',
+            '-ac', '2',
+            'pipe:1'
+        ], { stdio: ['pipe', 'pipe', 'pipe'] });
+
+        ffmpegProcess.on('error', (err) => {
+            console.error('[Voice] FFmpeg process error:', err);
+        });
+
+        ffmpegProcess.stderr.on('data', (data) => {
+            console.error('[Voice] FFmpeg stderr:', data.toString());
+        });
+
+        // Create Opus encoder
+        const encoder = new prism.opus.Encoder({
+            rate: 48000,
+            channels: 2,
+            frameSize: 960
+        });
+
+        const opusStream = ffmpegProcess.stdout.pipe(encoder);
+
+        const resource = createAudioResource(opusStream, {
+            inputType: require('@discordjs/voice').StreamType.Opus,
             inlineVolume: true
         });
 
-        // Set volume to 100%
+        // Set volume
         if (resource.volume) {
-            resource.volume.setVolume(1);
+            resource.volume.setVolume(1.0);
+            console.log('[Voice] Volume set to 100%');
         }
 
-        console.log('[Voice] Audio resource created successfully');
+        console.log('[Voice] Audio resource created');
 
         // Subscribe connection to player BEFORE playing
         const subscription = connection.subscribe(player);
@@ -140,22 +186,29 @@ async function playAdhan(guild) {
             if (newState.status === AudioPlayerStatus.Playing) {
                 console.log('[Voice] ✅ Audio is now PLAYING!');
             }
+
+            if (newState.status === AudioPlayerStatus.AutoPaused) {
+                console.log('[Voice] ⚠️ AutoPaused - trying to unpause...');
+                player.unpause();
+            }
         });
 
         // Handle player errors
         player.on('error', error => {
             console.error('[Voice] Player error:', error.message);
-            console.error('[Voice] Error resource:', error.resource);
+            console.error('[Voice] Error details:', error);
+            ffmpegProcess.kill();
             connection.destroy();
         });
 
         // Leave when finished
         player.on(AudioPlayerStatus.Idle, () => {
             console.log('[Voice] Adhan finished, leaving channel');
+            ffmpegProcess.kill();
             connection.destroy();
         });
 
-        // Start playing immediately
+        // Start playing
         player.play(resource);
         console.log('[Voice] ▶️ Started playing audio');
 
