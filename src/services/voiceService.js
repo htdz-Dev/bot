@@ -7,6 +7,7 @@ const {
     entersState
 } = require('@discordjs/voice');
 const path = require('path');
+const fs = require('fs');
 const { ChannelType } = require('discord.js');
 
 /**
@@ -49,12 +50,30 @@ async function playAdhan(guild) {
         // Handle connection ready
         await entersState(connection, VoiceConnectionStatus.Ready, 5000);
 
+        // Ensure bot is not muted
+        if (guild.members.me.voice.serverMute || guild.members.me.voice.selfMute) {
+            await guild.members.me.voice.setMute(false);
+            await guild.members.me.voice.setDeaf(false);
+        }
+
         const player = createAudioPlayer();
         const resourcePath = path.join(__dirname, '../../assets/adhan.mp3');
+
+        if (!fs.existsSync(resourcePath)) {
+            console.error(`[Voice] Audio file not found at: ${resourcePath}`);
+            connection.destroy();
+            return;
+        }
+
         const resource = createAudioResource(resourcePath);
 
-        player.play(resource);
         connection.subscribe(player);
+
+        // Small delay to ensure connection is stable
+        setTimeout(() => {
+            player.play(resource);
+            console.log(`[Voice] Playing Adhan in ${targetChannel.name}`);
+        }, 1000);
 
         console.log(`[Voice] Playing Adhan in ${targetChannel.name}`);
 
