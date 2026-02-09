@@ -37,6 +37,21 @@ module.exports = {
         nightOfDoubtDaysBefore: 1
     },
 
+    // Iftar Image Settings (belly stuffing 😂)
+    iftarImage: {
+        enabled: true,
+        delayMinutes: 30, // 30 minutes after Iftar
+        imagesFolder: './iftar-images',
+        captions: [
+            '🫃 حالة الكرش بعد نصف ساعة',
+            '📈 مؤشر التخمة وصل الذروة',
+            '🍽️ النتيجة النهائية للإفطار',
+            '😴 استعداد للقيلولة الرمضانية',
+            '🔋 جاري الشحن... 100% امتلاء',
+            '🚑 اطلبوا الإسعاف.. بطني 😹'
+        ]
+    },
+
     // Messages
     messages: {
         iftar: {

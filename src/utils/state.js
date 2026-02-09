@@ -217,6 +217,8 @@ function markMessageSent(type, channelId) {
             channelConfig.lastTaraweehSent = today;
         } else if (type === 'earlySuhoor') {
             channelConfig.lastEarlySuhoorSent = today;
+        } else if (type === 'iftarImage') {
+            channelConfig.lastIftarImageSent = today;
         }
         saveState(state);
     }
@@ -239,6 +241,7 @@ function wasMessageSentToday(type, channelId) {
     if (type === 'suhoor') return channelConfig.lastSuhoorSent === today;
     if (type === 'taraweeh') return channelConfig.lastTaraweehSent === today;
     if (type === 'earlySuhoor') return channelConfig.lastEarlySuhoorSent === today;
+    if (type === 'iftarImage') return channelConfig.lastIftarImageSent === today;
 
     return false;
 }

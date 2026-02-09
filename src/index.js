@@ -5,6 +5,7 @@ const { initScheduler, scheduleRamadanMessages } = require('./services/scheduler
 const { isRamadanActive, getState } = require('./utils/state');
 const ramadanCommand = require('./commands/ramadan');
 const testadhanCommand = require('./commands/testadhan');
+const testiftarimageCommand = require('./commands/testiftarimage');
 
 // Validate environment variables
 if (!process.env.DISCORD_TOKEN) {
@@ -30,6 +31,7 @@ const client = new Client({
 client.commands = new Collection();
 client.commands.set(ramadanCommand.data.name, ramadanCommand);
 client.commands.set(testadhanCommand.data.name, testadhanCommand);
+client.commands.set(testiftarimageCommand.data.name, testiftarimageCommand);
 
 // Register slash commands
 async function registerCommands() {
@@ -40,7 +42,13 @@ async function registerCommands() {
 
         await rest.put(
             Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
-            { body: [ramadanCommand.data.toJSON(), testadhanCommand.data.toJSON()] }
+            {
+                body: [
+                    ramadanCommand.data.toJSON(),
+                    testadhanCommand.data.toJSON(),
+                    testiftarimageCommand.data.toJSON()
+                ]
+            }
         );
 
         console.log('✅ Slash commands registered successfully');
