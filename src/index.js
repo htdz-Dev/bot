@@ -14,8 +14,7 @@ if (!process.env.DISCORD_TOKEN) {
 }
 
 if (!process.env.GUILD_ID) {
-    console.error('❌ Error: GUILD_ID is not set in .env file');
-    process.exit(1);
+    console.warn('⚠️ Warning: GUILD_ID is not set in .env file. Bot will register commands for ALL guilds it is in.');
 }
 
 // Create Discord client
@@ -34,22 +33,41 @@ client.commands.set(testadhanCommand.data.name, testadhanCommand);
 client.commands.set(testiftarimageCommand.data.name, testiftarimageCommand);
 
 // Register slash commands
-async function registerCommands() {
+// Register slash commands
+async function registerCommands(guildId = null) {
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    const body = [
+        ramadanCommand.data.toJSON(),
+        testadhanCommand.data.toJSON(),
+        testiftarimageCommand.data.toJSON()
+    ];
 
     try {
-        console.log('🔄 Registering slash commands...');
+        if (guildId) {
+            // Register for a specific guild (e.g. on join)
+            console.log(`🔄 Registering commands for guild: ${guildId}`);
+            await rest.put(
+                Routes.applicationGuildCommands(client.user.id, guildId),
+                { body }
+            );
+        } else {
+            // Register for ALL guilds
+            console.log('🔄 Registering slash commands for all guilds...');
+            const guilds = await client.guilds.fetch();
+            console.log(`   - Found ${guilds.size} guilds.`);
 
-        await rest.put(
-            Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
-            {
-                body: [
-                    ramadanCommand.data.toJSON(),
-                    testadhanCommand.data.toJSON(),
-                    testiftarimageCommand.data.toJSON()
-                ]
+            for (const [id, guild] of guilds) {
+                console.log(`   - Registering for ${guild.name} (${id})`);
+                try {
+                    await rest.put(
+                        Routes.applicationGuildCommands(client.user.id, id),
+                        { body }
+                    );
+                } catch (err) {
+                    console.error(`   ❌ Failed to register for ${guild.name}: ${err.message}`);
+                }
             }
-        );
+        }
 
         console.log('✅ Slash commands registered successfully');
     } catch (error) {
@@ -105,6 +123,12 @@ client.on('interactionCreate', async (interaction) => {
             await interaction.reply({ content: errorMessage, ephemeral: true });
         }
     }
+});
+
+// Handle guild join
+client.on('guildCreate', async (guild) => {
+    console.log(`🎉 Joined new guild: ${guild.name} (${guild.id})`);
+    await registerCommands(guild.id);
 });
 
 // Handle errors

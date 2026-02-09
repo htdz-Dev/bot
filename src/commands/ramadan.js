@@ -251,20 +251,20 @@ async function handleStop(interaction) {
             return;
         }
 
-        // Deactivate Ramadan
-        deactivateRamadan();
+        // Deactivate Ramadan for this channel ONLY
+        const { removeChannel } = require('../utils/state');
+        removeChannel(interaction.channelId);
 
-        // Cancel scheduled jobs
-        cancelScheduledJobs();
+        // We don't want to cancel ALL jobs, just re-schedule (the scheduler handles the list)
+        await scheduleRamadanMessages();
 
         const hijriDate = await getFormattedHijriDate();
-        const { embed, files } = createRamadanEmbed('ramadanEnded', {
-            hijriDate: hijriDate
+
+        await interaction.editReply({
+            content: `🛑 **تم إيقاف رسائل رمضان في هذه القناة.**\nلإعادة التفعيل، استخدم \`/ramadan start\``
         });
 
-        await interaction.editReply({ embeds: [embed], files: files });
-
-        console.log(`[Command] Ramadan deactivated by ${interaction.user.tag}`);
+        console.log(`[Command] Ramadan deactivated by ${interaction.user.tag} in channel ${interaction.channelId}`);
     } catch (error) {
         console.error('Error in stop command:', error);
         await interaction.editReply({ content: '❌ حدث خطأ أثناء إيقاف رمضان' });

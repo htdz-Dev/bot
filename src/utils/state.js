@@ -162,6 +162,22 @@ function deactivateRamadan() {
 }
 
 /**
+ * Remove a channel from the active list
+ * @param {string} channelId 
+ * @returns {Object} Updated state
+ */
+function removeChannel(channelId) {
+    const state = loadState();
+    state.channels = state.channels.filter(c => c.channelId !== channelId);
+
+    // If no channels left, maybe deactivate global? 
+    // For now keep global active so new channels can join easily.
+
+    saveState(state);
+    return state;
+}
+
+/**
  * Update city for a specific channel
  * @param {string} city - City name
  * @param {string} country - Country name
@@ -258,6 +274,7 @@ module.exports = {
     isRamadanActive,
     activateRamadan,
     deactivateRamadan,
+    removeChannel,
     updateCity,
     wasMessageSentToday,
     markMessageSent

@@ -3,9 +3,14 @@
   "countdownEnabled": true,
   "channels": [
     {
-      "channelId": "1468951235259404339",
-      "city": "Algiers",
-      "country": "Algeria",
+      "channelId": "channel-2",
+      "city": "London",
+      "country": "UK"
+    },
+    {
+      "channelId": "channel-3",
+      "city": "Paris",
+      "country": "France",
       "lastIftarSent": null,
       "lastSuhoorSent": null
     }
