@@ -202,8 +202,10 @@ async function handleStart(interaction) {
     try {
         const state = getState();
 
-        if (state.ramadanActive) {
-            await interaction.editReply({ content: '⚠️ رمضان مفعّل بالفعل!' });
+        // Check if THIS channel is already active
+        const channelConfig = state.channels.find(c => c.channelId === interaction.channelId);
+        if (state.ramadanActive && channelConfig) {
+            await interaction.editReply({ content: '⚠️ رمضان مفعّل بالفعل في هذه القناة!' });
             return;
         }
 

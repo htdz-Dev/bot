@@ -6,6 +6,7 @@ const { createRamadanEmbed, createCountdownEmbed } = require('../utils/messages'
 const { generateImsakiyah } = require('./imageGenerator');
 const { sendIftarImage } = require('./iftarImageService');
 const { playAdhan } = require('./voiceService');
+const config = require('../config');
 const { AttachmentBuilder } = require('discord.js');
 
 
@@ -431,7 +432,6 @@ async function sendIftarMessage(channel, channelConfig) {
         console.log(`[Scheduler] Iftar sent to ${channelConfig.city}`);
 
         // Schedule "Belly Stuffing" image
-        const config = require('../config');
         if (config.iftarImage && config.iftarImage.enabled) {
             const delayMs = config.iftarImage.delayMinutes * 60 * 1000;
             console.log(`[Scheduler] Scheduling iftar image for ${channelConfig.city} in ${config.iftarImage.delayMinutes} minutes`);
