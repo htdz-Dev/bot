@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { playAdhan } = require('../services/voiceService');
 const { isAdmin, getPermissionDeniedMessage } = require('../utils/permissions');
 
@@ -11,7 +11,7 @@ async function execute(interaction) {
     if (!isAdmin(interaction.member)) {
         await interaction.reply({
             content: getPermissionDeniedMessage(),
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
         return;
     }
@@ -19,14 +19,14 @@ async function execute(interaction) {
     if (!interaction.guild) {
         await interaction.reply({
             content: '❌ This command must be used in a server',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
         return;
     }
 
     await interaction.reply({
         content: '🔊 Testing Adhan audio... Check console for debug logs!',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
     });
 
     console.log('\n========================================');

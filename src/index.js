@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, REST, Routes, MessageFlags } = require('discord.js');
 const { initScheduler, scheduleRamadanMessages } = require('./services/scheduler');
 const { isRamadanActive, getState } = require('./utils/state');
 const ramadanCommand = require('./commands/ramadan');
@@ -129,9 +129,9 @@ client.on('interactionCreate', async (interaction) => {
         const errorMessage = '❌ حدث خطأ أثناء تنفيذ الأمر';
 
         if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ content: errorMessage, ephemeral: true });
+            await interaction.followUp({ content: errorMessage, flags: MessageFlags.Ephemeral });
         } else {
-            await interaction.reply({ content: errorMessage, ephemeral: true });
+            await interaction.reply({ content: errorMessage, flags: MessageFlags.Ephemeral });
         }
     }
 });

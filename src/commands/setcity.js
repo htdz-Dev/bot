@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, MessageFlags } = require('discord.js');
 const { getState } = require('../utils/state');
 
 const data = new SlashCommandBuilder()
@@ -6,7 +6,7 @@ const data = new SlashCommandBuilder()
     .setDescription('اختر مدينتك لتصلك تنبيهات السحور والإفطار حسب توقيتها');
 
 async function execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
         const state = getState();
@@ -69,7 +69,7 @@ async function execute(interaction) {
 async function handleCitySelection(interaction) {
     if (!interaction.isStringSelectMenu() || interaction.customId !== 'city_select') return;
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
         const selectedValue = interaction.values[0];

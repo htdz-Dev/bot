@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { isAdmin, getPermissionDeniedMessage } = require('../utils/permissions');
 const { getState, getChannelConfig, activateRamadan, deactivateRamadan, updateCity } = require('../utils/state');
 const { createStatusEmbed, createRamadanEmbed, createCountdownEmbed } = require('../utils/messages');
@@ -164,7 +164,7 @@ async function execute(interaction) {
             await handleRemoveCity(interaction);
             break;
         default:
-            await interaction.reply({ content: '❌ أمر غير معروف', ephemeral: true });
+            await interaction.reply({ content: '❌ أمر غير معروف', flags: MessageFlags.Ephemeral });
     }
 }
 
@@ -226,7 +226,7 @@ async function handleStart(interaction) {
     if (!isAdmin(interaction.member)) {
         await interaction.reply({
             content: getPermissionDeniedMessage(),
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
         return;
     }
@@ -272,7 +272,7 @@ async function handleStop(interaction) {
     if (!isAdmin(interaction.member)) {
         await interaction.reply({
             content: getPermissionDeniedMessage(),
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
         return;
     }
@@ -317,7 +317,7 @@ async function handleCountdownToggle(interaction, enabled) {
     if (!isAdmin(interaction.member)) {
         await interaction.reply({
             content: getPermissionDeniedMessage(),
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
         return;
     }
@@ -343,7 +343,7 @@ async function handleCountdownToggle(interaction, enabled) {
         console.error('Error toggling countdown:', error);
         await interaction.reply({
             content: '❌ حدث خطأ أثناء تغيير إعدادات العد التنازلي',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
     }
 }
@@ -356,7 +356,7 @@ async function handleCity(interaction) {
     if (!isAdmin(interaction.member)) {
         await interaction.reply({
             content: getPermissionDeniedMessage(),
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
         return;
     }
@@ -443,7 +443,7 @@ async function handleTest(interaction) {
     if (!isAdmin(interaction.member)) {
         await interaction.reply({
             content: getPermissionDeniedMessage(),
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
         return;
     }
@@ -605,7 +605,7 @@ async function handleSetup(interaction) {
     if (!isAdmin(interaction.member)) {
         await interaction.reply({
             content: getPermissionDeniedMessage(),
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
         return;
     }
@@ -665,7 +665,7 @@ async function handleRemoveCity(interaction) {
     if (!isAdmin(interaction.member)) {
         await interaction.reply({
             content: getPermissionDeniedMessage(),
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
         return;
     }
