@@ -20,6 +20,8 @@
      - اختر **Scopes**: `bot`, `applications.commands`.
      - اختر **Permissions**:
        - `Send Messages`
+       - `Read Message History` (مهم للردود)
+       - `Manage Roles` (مهم لنظام المدن وتوزيع الرتب)
        - `Embed Links`
        - `Attach Files`
        - `Connect` (للأذان)

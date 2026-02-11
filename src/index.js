@@ -139,7 +139,50 @@ client.on('interactionCreate', async (interaction) => {
 // Handle guild join (Bot joins a guild)
 client.on('guildCreate', async (guild) => {
     console.log(`🎉 Joined new guild: ${guild.name} (${guild.id})`);
+
+    // 1. Register commands
     await registerCommands(guild.id);
+
+    // 2. Find a channel to send welcome message and set as default
+    // Try system channel first, then first viewable/sendable text channel
+    let targetChannel = guild.systemChannel;
+
+    if (!targetChannel || !targetChannel.viewable || !targetChannel.permissionsFor(guild.members.me).has('SendMessages')) {
+        targetChannel = guild.channels.cache.find(c =>
+            c.type === 0 && // Text Channel
+            c.viewable &&
+            c.permissionsFor(guild.members.me).has('SendMessages')
+        );
+    }
+
+    if (targetChannel) {
+        console.log(`   - Found target channel: ${targetChannel.name} (${targetChannel.id})`);
+
+        // 3. Initialize State: Set Algiers, Algeria as default for this channel
+        try {
+            const { updateCity } = require('./utils/state');
+            // updateCity(city, country, channelId, timezone, roleId)
+            updateCity('Algiers', 'Algeria', targetChannel.id, 'Africa/Algiers', null);
+            console.log(`   - Auto-configured Algiers for ${guild.name}`);
+
+            // 4. Send Welcome Message
+            const welcomeMessage = `🌙 **شكراً لإضافة Ramadan Bot إلى سيرفركم!**\n\n` +
+                `📍 **الإعداد الافتراضي:**\n` +
+                `تم ضبط المدينة تلقائياً على: **🇩🇿 الجزائر (Algiers)**\n` +
+                `التوقيت: **Africa/Algiers**\n\n` +
+                `⚙️ **كيفية التعديل:**\n` +
+                `• لتغيير المدينة لهذا الروم: \`/ramadan setup city:Name country:Country\`\n` +
+                `• لإضافة مدن أخرى: كرر الأمر السابق.\n` +
+                `• للأعضاء: استخدموا \`/setcity\` لاختيار مدينتكم المفضلة.\n\n` +
+                `رمضان مبارك! ✨`;
+
+            await targetChannel.send(welcomeMessage);
+        } catch (error) {
+            console.error(`   ❌ Error auto-configuring guild: ${error.message}`);
+        }
+    } else {
+        console.warn(`   ⚠️ Could not find a suitable channel to send welcome message in ${guild.name}`);
+    }
 });
 
 // Handle new member join (Auto-assign Default/Algeria Role)
