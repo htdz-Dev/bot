@@ -92,6 +92,20 @@ const data = new SlashCommandBuilder()
                 option
                     .setName('country')
                     .setDescription('اسم الدولة للاختبار')
+                    .setRequired(false)))
+    .addSubcommand(subcommand =>
+        subcommand
+            .setName('setup')
+            .setDescription('إعداد البوت للسيرفر (المدينة والبلد)')
+            .addStringOption(option =>
+                option
+                    .setName('city')
+                    .setDescription('اسم المدينة (بالإنجليزية)')
+                    .setRequired(true))
+            .addStringOption(option =>
+                option
+                    .setName('country')
+                    .setDescription('اسم الدولة (بالإنجليزية)')
                     .setRequired(false)));
 
 /**
@@ -128,6 +142,9 @@ async function execute(interaction) {
             break;
         case 'test':
             await handleTest(interaction);
+            break;
+        case 'setup':
+            await handleSetup(interaction);
             break;
         default:
             await interaction.reply({ content: '❌ أمر غير معروف', ephemeral: true });
@@ -560,6 +577,54 @@ async function handleSchedule(interaction) {
     } catch (error) {
         console.error('Error handling schedule:', error);
         await interaction.editReply({ content: '❌ حدث خطأ أثناء إنشاء الإمساكية.' });
+    }
+}
+
+/**
+ * Handle /ramadan setup
+ */
+async function handleSetup(interaction) {
+    // Check permissions
+    if (!isAdmin(interaction.member)) {
+        await interaction.reply({
+            content: getPermissionDeniedMessage(),
+            ephemeral: true
+        });
+        return;
+    }
+
+    const cityName = interaction.options.getString('city');
+    const countryName = interaction.options.getString('country') || 'Algeria';
+
+    await interaction.deferReply();
+
+    try {
+        // Update city for THIS channel (Register channel)
+        updateCity(cityName, countryName, interaction.channelId);
+
+        // Verify the city works with the API
+        const times = await getPrayerTimes(cityName, countryName);
+
+        if (!times) {
+            await interaction.editReply({ content: `⚠️ لم يتم العثور على أوقات الصلاة لمدينة **${cityName}, ${countryName}**. يرجى التأكد من الاسم.\nتم حفظ المدينة، لكن يرجى التحقق.` });
+            return;
+        }
+
+        // Refresh schedule for this channel (and others)
+        // Only if ramadan is ACTIVE globally, messages will be scheduled.
+        // If not active, this just registers the channel for later.
+        if (getState().ramadanActive) {
+            await scheduleRamadanMessages();
+        }
+
+        await interaction.editReply({
+            content: `✅ **تم إعداد البوت بنجاح!**\n📍 المدينة: **${cityName}**\n🗺️ الدولة: **${countryName}**\n\n📌 **ملاحظة:** سيبدأ البوت بإرسال التنبيهات تلقائياً عند بدء شهر رمضان المبارك.\nللتأكد من الإعدادات، يمكنك استخدام \`/ramadan status\`.`
+        });
+
+        console.log(`[Command] Setup executed for ${cityName}, ${countryName} in channel ${interaction.channelId}`);
+    } catch (error) {
+        console.error('Error updating setup:', error);
+        await interaction.editReply({ content: '❌ حدث خطأ أثناء إعداد البوت' });
     }
 }
 

@@ -8,7 +8,12 @@
    - افتح [Discord Developer Portal](https://discord.com/developers/applications).
    - اختر تطبيق البوت الخاص بك.
 
-2. **إنشاء الرابط**:
+2. **تفعيل البوت العام (Public Bot)**:
+   - من القائمة الجانبية، اختر **Bot**.
+   - تأكد من تفعيل خيار **Public Bot**. (بدون هذا الخيار، لا يمكن لأحد غيرك إضافة البوت).
+   - تأكد من تفعيل **Privileged Gateway Intents** (Message Content, Server Members, Presence) إذا لزم الأمر.
+
+3. **إنشاء الرابط**:
    - من القائمة الجانبية، اختر **Installation**.
    - تأكد من تفعيل **Guild Install**.
    - في قسم **Default Install Settings**:
