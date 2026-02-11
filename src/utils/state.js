@@ -182,24 +182,34 @@ function removeChannel(channelId) {
  * @param {string} city - City name
  * @param {string} country - Country name
  * @param {string} channelId - Channel ID context
+ * @param {string} timezone - Timezone (e.g. 'Africa/Algiers')
+ * @param {string} roleId - Role ID to ping (optional)
  * @returns {Object} Updated state
  */
-function updateCity(city, country = 'Algeria', channelId = null) {
+function updateCity(city, country = 'Algeria', channelId = null, timezone = null, roleId = null) {
     const state = loadState();
 
     if (channelId) {
-        // Update specific channel
-        let channelConfig = state.channels.find(c => c.channelId === channelId);
+        // Update specific channel configuration
+        // We now check for a config that matches BOTH channelId AND city
+        // This allows multiple cities per channel.
+        let channelConfig = state.channels.find(c => c.channelId === channelId && c.city.toLowerCase() === city.toLowerCase());
+
         if (channelConfig) {
+            // Update existing config for this city
             channelConfig.city = city;
             channelConfig.country = country;
+            if (timezone) channelConfig.timezone = timezone;
+            if (roleId) channelConfig.roleId = roleId;
             channelConfig.cachedPrayerTimes = null; // Clear cache
         } else {
-            // Create new config if not exists
+            // Create new config for this city in this channel
             state.channels.push({
                 channelId,
                 city,
                 country,
+                timezone,
+                roleId,
                 lastIftarSent: null,
                 lastSuhoorSent: null
             });
@@ -210,6 +220,18 @@ function updateCity(city, country = 'Algeria', channelId = null) {
         state.defaultCountry = country;
     }
 
+    saveState(state);
+    return state;
+}
+
+/**
+ * Remove a specific city config from a channel
+ * @param {string} channelId
+ * @param {string} city
+ */
+function removeCityConfig(channelId, city) {
+    const state = loadState();
+    state.channels = state.channels.filter(c => !(c.channelId === channelId && c.city.toLowerCase() === city.toLowerCase()));
     saveState(state);
     return state;
 }
@@ -276,6 +298,7 @@ module.exports = {
     deactivateRamadan,
     removeChannel,
     updateCity,
+    removeCityConfig,
     wasMessageSentToday,
     markMessageSent
 };

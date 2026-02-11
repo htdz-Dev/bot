@@ -6,6 +6,7 @@ const { isRamadanActive, getState } = require('./utils/state');
 const ramadanCommand = require('./commands/ramadan');
 const testadhanCommand = require('./commands/testadhan');
 const testiftarimageCommand = require('./commands/testiftarimage');
+const setCityCommand = require('./commands/setcity');
 
 // Validate environment variables
 if (!process.env.DISCORD_TOKEN) {
@@ -31,6 +32,7 @@ client.commands = new Collection();
 client.commands.set(ramadanCommand.data.name, ramadanCommand);
 client.commands.set(testadhanCommand.data.name, testadhanCommand);
 client.commands.set(testiftarimageCommand.data.name, testiftarimageCommand);
+client.commands.set(setCityCommand.data.name, setCityCommand);
 
 // Register slash commands
 // Register slash commands
@@ -39,7 +41,8 @@ async function registerCommands(guildId = null) {
     const body = [
         ramadanCommand.data.toJSON(),
         testadhanCommand.data.toJSON(),
-        testiftarimageCommand.data.toJSON()
+        testiftarimageCommand.data.toJSON(),
+        setCityCommand.data.toJSON()
     ];
 
     try {
@@ -101,6 +104,14 @@ client.once('ready', async () => {
 
 // Handle interactions
 client.on('interactionCreate', async (interaction) => {
+    // Handle String Select Menu (City Selection)
+    if (interaction.isStringSelectMenu()) {
+        if (interaction.customId === 'city_select') {
+            await setCityCommand.handleCitySelection(interaction);
+        }
+        return;
+    }
+
     if (!interaction.isChatInputCommand()) return;
 
     const command = client.commands.get(interaction.commandName);
@@ -125,10 +136,51 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
-// Handle guild join
+// Handle guild join (Bot joins a guild)
 client.on('guildCreate', async (guild) => {
     console.log(`🎉 Joined new guild: ${guild.name} (${guild.id})`);
     await registerCommands(guild.id);
+});
+
+// Handle new member join (Auto-assign Default/Algeria Role)
+client.on('guildMemberAdd', async (member) => {
+    console.log(`New member joined: ${member.user.tag}`);
+    try {
+        const state = getState();
+
+        // Find if there is a default city configured for this guild (via any channel)
+        // We prioritize "Algeria" or "Algiers" config.
+        const guildChannels = member.guild.channels.cache.map(c => c.id);
+        const guildConfigs = state.channels.filter(c => guildChannels.includes(c.channelId));
+
+        if (guildConfigs.length > 0) {
+            // Find config for "Algeria" or "Algiers"
+            const defaultConfig = guildConfigs.find(c =>
+                (c.country && c.country.toLowerCase().includes('algeria')) ||
+                (c.city && c.city.toLowerCase().includes('algiers'))
+            );
+
+            if (defaultConfig && defaultConfig.roleId) {
+                const role = await member.guild.roles.fetch(defaultConfig.roleId);
+                if (role) {
+                    await member.roles.add(role);
+                    console.log(`Assigning default role to ${member.user.tag}: ${role.name}`);
+
+                    // Create DM channel
+                    const dmChannel = await member.createDM();
+                    if (dmChannel) {
+                        try {
+                            await dmChannel.send(`مرحباً بك في سيرفر **${member.guild.name}**! 🌙\nتم تعيين مدينتك افتراضياً إلى **${defaultConfig.city}** (${defaultConfig.country}).\nإذا كنت من مدينة أخرى، يمكنك تغييرها باستخدام الأمر \`/setcity\` في السيرفر.`);
+                        } catch (err) {
+                            console.log(`Could not send DM to ${member.user.tag}`);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error assigning default role:', error);
+    }
 });
 
 // Handle errors

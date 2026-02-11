@@ -9,15 +9,19 @@ const { getState, updateState } = require('../utils/state');
  * @param {Date} date - Date to get prayer times for
  * @returns {Promise<Object>} Prayer times object
  */
+/**
+ * Get prayer times for a specific city and date
+ * @param {string} city - City name
+ * @param {string} country - Country name
+ * @param {Date} date - Date to get prayer times for
+ * @returns {Promise<Object>} Object containing timings and timezone
+ */
 async function getPrayerTimes(city = null, country = null, date = new Date()) {
     const state = getState();
     city = city || state.city || config.defaultCity;
     country = country || state.country || config.defaultCountry;
 
     const dateStr = date.toISOString().split('T')[0];
-
-    // Caching removed to support multi-city correctly
-    // (To implement proper caching, we'd need a map Keyed by "City-Country-Date")
 
     try {
         const day = date.getDate();
@@ -40,7 +44,10 @@ async function getPrayerTimes(city = null, country = null, date = new Date()) {
         });
 
         if (response.data && response.data.code === 200) {
-            return response.data.data.timings;
+            return {
+                timings: response.data.data.timings,
+                timezone: response.data.data.meta.timezone
+            };
         }
 
         throw new Error('Invalid API response');
@@ -55,8 +62,8 @@ async function getPrayerTimes(city = null, country = null, date = new Date()) {
  * @returns {Promise<string>} Fajr time (HH:MM format)
  */
 async function getFajrTime() {
-    const times = await getPrayerTimes();
-    return times.Fajr ? times.Fajr.split(' ')[0] : null;
+    const data = await getPrayerTimes();
+    return data && data.timings && data.timings.Fajr ? data.timings.Fajr.split(' ')[0] : null;
 }
 
 /**
@@ -64,8 +71,8 @@ async function getFajrTime() {
  * @returns {Promise<string>} Maghrib time (HH:MM format)
  */
 async function getMaghribTime() {
-    const times = await getPrayerTimes();
-    return times.Maghrib ? times.Maghrib.split(' ')[0] : null;
+    const data = await getPrayerTimes();
+    return data && data.timings && data.timings.Maghrib ? data.timings.Maghrib.split(' ')[0] : null;
 }
 
 /**

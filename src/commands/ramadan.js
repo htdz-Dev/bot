@@ -106,7 +106,21 @@ const data = new SlashCommandBuilder()
                 option
                     .setName('country')
                     .setDescription('اسم الدولة (بالإنجليزية)')
-                    .setRequired(false)));
+                    .setRequired(false))
+            .addRoleOption(option =>
+                option
+                    .setName('role')
+                    .setDescription('الرتبة التي سيتم منشنتها (اختياري)')
+                    .setRequired(false)))
+    .addSubcommand(subcommand =>
+        subcommand
+            .setName('remove-city')
+            .setDescription('إزالة مدينة من إعدادات القناة - للمسؤول فقط')
+            .addStringOption(option =>
+                option
+                    .setName('city')
+                    .setDescription('اسم المدينة للإزالة')
+                    .setRequired(true)));
 
 /**
  * Execute the ramadan command
@@ -145,6 +159,9 @@ async function execute(interaction) {
             break;
         case 'setup':
             await handleSetup(interaction);
+            break;
+        case 'remove-city':
+            await handleRemoveCity(interaction);
             break;
         default:
             await interaction.reply({ content: '❌ أمر غير معروف', ephemeral: true });
@@ -595,20 +612,24 @@ async function handleSetup(interaction) {
 
     const cityName = interaction.options.getString('city');
     const countryName = interaction.options.getString('country') || 'Algeria';
+    const role = interaction.options.getRole('role');
 
     await interaction.deferReply();
 
     try {
-        // Update city for THIS channel (Register channel)
-        updateCity(cityName, countryName, interaction.channelId);
+        // Verify the city works with the API AND get Timezone
+        const prayerData = await getPrayerTimes(cityName, countryName);
 
-        // Verify the city works with the API
-        const times = await getPrayerTimes(cityName, countryName);
-
-        if (!times) {
+        if (!prayerData || !prayerData.timings) {
             await interaction.editReply({ content: `⚠️ لم يتم العثور على أوقات الصلاة لمدينة **${cityName}, ${countryName}**. يرجى التأكد من الاسم.\nتم حفظ المدينة، لكن يرجى التحقق.` });
             return;
         }
+
+        const timezone = prayerData.timezone;
+        const roleId = role ? role.id : null;
+
+        // Update city for THIS channel (Register channel) with Timezone and Role
+        updateCity(cityName, countryName, interaction.channelId, timezone, roleId);
 
         // Refresh schedule for this channel (and others)
         // Only if ramadan is ACTIVE globally, messages will be scheduled.
@@ -617,14 +638,62 @@ async function handleSetup(interaction) {
             await scheduleRamadanMessages();
         }
 
-        await interaction.editReply({
-            content: `✅ **تم إعداد البوت بنجاح!**\n📍 المدينة: **${cityName}**\n🗺️ الدولة: **${countryName}**\n\n📌 **ملاحظة:** سيبدأ البوت بإرسال التنبيهات تلقائياً عند بدء شهر رمضان المبارك.\nللتأكد من الإعدادات، يمكنك استخدام \`/ramadan status\`.`
-        });
+        let replyContent = `✅ **تم إعداد البوت بنجاح!**\n📍 المدينة: **${cityName}**\n🗺️ الدولة: **${countryName}**\n🌐 التوقيت: **${timezone}**`;
 
-        console.log(`[Command] Setup executed for ${cityName}, ${countryName} in channel ${interaction.channelId}`);
+        if (role) {
+            replyContent += `\n🔔 التنبيهات ستصل للرتبة: <@&${role.id}>`;
+        } else {
+            replyContent += `\n🔔 التنبيهات ستصل للجميع (@everyone)`;
+        }
+
+        replyContent += `\n\n📌 **ملاحظة:** سيبدأ البوت بإرسال التنبيهات تلقائياً عند بدء شهر رمضان المبارك.`;
+
+        await interaction.editReply({ content: replyContent });
+
+        console.log(`[Command] Setup executed for ${cityName}, ${countryName} (${timezone}) in channel ${interaction.channelId}`);
     } catch (error) {
         console.error('Error updating setup:', error);
         await interaction.editReply({ content: '❌ حدث خطأ أثناء إعداد البوت' });
+    }
+}
+
+/**
+ * Handle /ramadan remove-city
+ */
+async function handleRemoveCity(interaction) {
+    // Check permissions
+    if (!isAdmin(interaction.member)) {
+        await interaction.reply({
+            content: getPermissionDeniedMessage(),
+            ephemeral: true
+        });
+        return;
+    }
+
+    const cityName = interaction.options.getString('city');
+    const { removeCityConfig, scheduleRamadanMessages } = require('../services/scheduler'); // Need to require from where functions are available or fix requires
+    const { removeCityConfig: removeCityConfigState, getState } = require('../utils/state');
+
+    await interaction.deferReply();
+
+    try {
+        const state = getState();
+        const removed = removeCityConfigState(interaction.channelId, cityName);
+
+        // Check if anything actually changed (optional optimization)
+
+        // Refresh schedule
+        if (state.ramadanActive) {
+            const { scheduleRamadanMessages } = require('../services/scheduler');
+            await scheduleRamadanMessages();
+        }
+
+        await interaction.editReply({ content: `✅ **تم إزالة مدينة ${cityName} من إعدادات هذه القناة.**` });
+        console.log(`[Command] Removed city ${cityName} from channel ${interaction.channelId}`);
+
+    } catch (error) {
+        console.error('Error removing city:', error);
+        await interaction.editReply({ content: '❌ حدث خطأ أثناء إزالة المدينة' });
     }
 }
 

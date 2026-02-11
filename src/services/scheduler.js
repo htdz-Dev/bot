@@ -287,12 +287,15 @@ async function scheduleRamadanMessages() {
             const country = channelConfig.country;
 
             // Get prayer times for this city
-            const prayerTimes = await getPrayerTimes(city, country);
+            const prayerData = await getPrayerTimes(city, country);
+            const prayerTimes = prayerData.timings;
+            // Use configured timezone, or fallback to API timezone, or fallback to 'Africa/Algiers'
+            const timezone = channelConfig.timezone || prayerData.timezone || 'Africa/Algiers';
 
             // Iftar (Maghrib)
             if (prayerTimes.Maghrib) {
                 const [iftarHour, iftarMinute] = prayerTimes.Maghrib.split(':').map(Number);
-                scheduleChannelJob('iftar', iftarHour, iftarMinute, channelConfig);
+                scheduleChannelJob('iftar', iftarHour, iftarMinute, channelConfig, timezone);
             }
 
             // Suhoor (Fajr - 30 mins)
@@ -302,7 +305,7 @@ async function scheduleRamadanMessages() {
                 fajrDate.setHours(fajrHour, fajrMinute, 0);
                 fajrDate.setMinutes(fajrDate.getMinutes() - 30); // 30 mins before Fajr
 
-                scheduleChannelJob('suhoor', fajrDate.getHours(), fajrDate.getMinutes(), channelConfig);
+                scheduleChannelJob('suhoor', fajrDate.getHours(), fajrDate.getMinutes(), channelConfig, timezone);
             }
 
             // Early Suhoor Reminder (1 hour before Fajr)
@@ -312,7 +315,7 @@ async function scheduleRamadanMessages() {
                 earlySuhoorDate.setHours(fajrHour, fajrMinute, 0);
                 earlySuhoorDate.setMinutes(earlySuhoorDate.getMinutes() - 60); // 1 hour before Fajr
 
-                scheduleChannelJob('earlySuhoor', earlySuhoorDate.getHours(), earlySuhoorDate.getMinutes(), channelConfig);
+                scheduleChannelJob('earlySuhoor', earlySuhoorDate.getHours(), earlySuhoorDate.getMinutes(), channelConfig, timezone);
             }
 
             // Taraweeh Reminder (15 mins before Isha)
@@ -322,7 +325,7 @@ async function scheduleRamadanMessages() {
                 taraweehDate.setHours(ishaHour, ishaMinute, 0);
                 taraweehDate.setMinutes(taraweehDate.getMinutes() - 15); // 15 mins before Isha
 
-                scheduleChannelJob('taraweeh', taraweehDate.getHours(), taraweehDate.getMinutes(), channelConfig);
+                scheduleChannelJob('taraweeh', taraweehDate.getHours(), taraweehDate.getMinutes(), channelConfig, timezone);
             }
 
         } catch (error) {
@@ -334,8 +337,9 @@ async function scheduleRamadanMessages() {
 /**
  * Helper to schedule a specific job for a channel
  */
-function scheduleChannelJob(type, hour, minute, channelConfig) {
+function scheduleChannelJob(type, hour, minute, channelConfig, timezone) {
     const cronExpression = `${minute} ${hour} * * *`;
+    const tz = timezone || 'Africa/Algiers';
 
     const job = cron.schedule(cronExpression, async () => {
         try {
@@ -355,11 +359,11 @@ function scheduleChannelJob(type, hour, minute, channelConfig) {
             console.error(`[Scheduler] Error executing ${type} job for ${channelConfig.city}:`, err);
         }
     }, {
-        timezone: 'Africa/Algiers' // default, but let's keep it consistent
+        timezone: tz
     });
 
     channelJobs.push(job);
-    console.log(`[Scheduler] Scheduled ${type} for ${channelConfig.city} at ${hour}:${String(minute).padStart(2, '0')}`);
+    console.log(`[Scheduler] Scheduled ${type} for ${channelConfig.city} at ${hour}:${String(minute).padStart(2, '0')} (${tz})`);
 }
 
 /**
@@ -377,7 +381,8 @@ async function sendDailyImsakiyah() {
             if (!channel) continue;
 
             console.log(`[Scheduler] Generating Imsakiyah for ${channelConfig.city}...`);
-            const prayerTimes = await getPrayerTimes(channelConfig.city, channelConfig.country);
+            const prayerData = await getPrayerTimes(channelConfig.city, channelConfig.country);
+            const prayerTimes = prayerData.timings;
             const hijriDate = await getFormattedHijriDate();
 
             const now = new Date();
@@ -412,7 +417,8 @@ async function sendIftarMessage(channel, channelConfig) {
     }
 
     try {
-        const prayerTimes = await getPrayerTimes(channelConfig.city, channelConfig.country);
+        const prayerData = await getPrayerTimes(channelConfig.city, channelConfig.country);
+        const prayerTimes = prayerData.timings;
         const hijriDate = await getFormattedHijriDate();
 
         const { embed, files } = createRamadanEmbed('iftar', {
@@ -421,7 +427,8 @@ async function sendIftarMessage(channel, channelConfig) {
             hijriDate: hijriDate
         });
 
-        await channel.send({ content: '@everyone', embeds: [embed], files: files });
+        const mention = channelConfig.roleId ? `<@&${channelConfig.roleId}>` : '@everyone';
+        await channel.send({ content: mention, embeds: [embed], files: files });
 
         // Play Adhan
         if (channel.guild) {
@@ -459,7 +466,8 @@ async function sendSuhoorMessage(channel, channelConfig) {
     }
 
     try {
-        const prayerTimes = await getPrayerTimes(channelConfig.city, channelConfig.country);
+        const prayerData = await getPrayerTimes(channelConfig.city, channelConfig.country);
+        const prayerTimes = prayerData.timings;
         const hijriDate = await getFormattedHijriDate();
 
         const { embed, files } = createRamadanEmbed('suhoor', {
@@ -468,7 +476,8 @@ async function sendSuhoorMessage(channel, channelConfig) {
             hijriDate: hijriDate
         });
 
-        await channel.send({ content: '@everyone', embeds: [embed], files: files });
+        const mention = channelConfig.roleId ? `<@&${channelConfig.roleId}>` : '@everyone';
+        await channel.send({ content: mention, embeds: [embed], files: files });
         markMessageSent('suhoor', channel.id);
         console.log(`[Scheduler] Suhoor sent to ${channelConfig.city}`);
     } catch (error) {
@@ -488,7 +497,8 @@ async function sendEarlySuhoorMessage(channel, channelConfig) {
     }
 
     try {
-        const prayerTimes = await getPrayerTimes(channelConfig.city, channelConfig.country);
+        const prayerData = await getPrayerTimes(channelConfig.city, channelConfig.country);
+        const prayerTimes = prayerData.timings;
         const hijriDate = await getFormattedHijriDate();
 
         const { embed, files } = createRamadanEmbed('earlySuhoor', {
@@ -497,7 +507,14 @@ async function sendEarlySuhoorMessage(channel, channelConfig) {
             hijriDate: hijriDate
         });
 
-        await channel.send({ embeds: [embed], files: files });
+        // Optional: Maybe don't ping everyone for early reminder if it's annoying?
+        // For now, let's keep it consistent or use no ping.
+        // User requested preventing duplicates/cleaner notifs.
+        // Let's use role if defined, otherwise NO ping for early reminder to be less annoying?
+        // Or same rule? Let's use same rule.
+        const mention = channelConfig.roleId ? `<@&${channelConfig.roleId}>` : '';
+
+        await channel.send({ content: mention, embeds: [embed], files: files });
         markMessageSent('earlySuhoor', channel.id);
         console.log(`[Scheduler] Early Suhoor sent to ${channelConfig.city}`);
     } catch (error) {
@@ -517,7 +534,8 @@ async function sendTaraweehMessage(channel, channelConfig) {
     }
 
     try {
-        const prayerTimes = await getPrayerTimes(channelConfig.city, channelConfig.country);
+        const prayerData = await getPrayerTimes(channelConfig.city, channelConfig.country);
+        const prayerTimes = prayerData.timings;
         const hijriDate = await getFormattedHijriDate();
 
         const { embed, files } = createRamadanEmbed('taraweeh', {
@@ -526,7 +544,8 @@ async function sendTaraweehMessage(channel, channelConfig) {
             hijriDate: hijriDate
         });
 
-        await channel.send({ embeds: [embed], files: files });
+        const mention = channelConfig.roleId ? `<@&${channelConfig.roleId}>` : '';
+        await channel.send({ content: mention, embeds: [embed], files: files });
         markMessageSent('taraweeh', channel.id);
         console.log(`[Scheduler] Taraweeh sent to ${channelConfig.city}`);
     } catch (error) {
