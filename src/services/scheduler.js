@@ -32,12 +32,23 @@ function initScheduler(discordClient) {
 
     // Schedule countdown reminder at 18:00 daily (before Ramadan only)
     // Algiers timezone
-    eveningCountdownJob = cron.schedule('40 18 * * *', async () => {
+    eveningCountdownJob = cron.schedule('0 18 * * *', async () => {
         console.log('[Scheduler] ⏰ Countdown reminder triggered at 18:00');
         await sendCountdownOrNightOfDoubt();
     }, {
         timezone: 'Africa/Algiers'
     });
+
+    // Guild-specific countdown for test guild at 19:28
+    const testChannelId = process.env.CHANNEL_ID;
+    if (testChannelId) {
+        cron.schedule('28 19 * * *', async () => {
+            console.log('[Scheduler] ⏰ Test guild countdown triggered at 19:28');
+            await sendCountdownToChannel(testChannelId);
+        }, {
+            timezone: 'Africa/Algiers'
+        });
+    }
 
     // Schedule Imsakiyah image at 4:00 AM daily (During Ramadan)
     imsakiyahJob = cron.schedule('0 4 * * *', async () => {
@@ -47,7 +58,7 @@ function initScheduler(discordClient) {
         timezone: 'Africa/Algiers'
     });
 
-    console.log('[Scheduler] ✅ Initialized - Countdown at 18:00, Imsakiyah at 4:00');
+    console.log('[Scheduler] ✅ Initialized - Countdown at 18:00 (global) + 19:28 (test guild), Imsakiyah at 4:00');
 }
 
 /**
@@ -256,6 +267,37 @@ async function sendCountdownMessage(channel, daysRemaining) {
         console.log(`[Scheduler] Countdown sent: ${daysRemaining} days remaining`);
     } catch (error) {
         console.error('[Scheduler] Error sending countdown:', error.message);
+    }
+}
+
+/**
+ * Send countdown directly to a specific channel (for per-guild scheduling)
+ * @param {string} channelId 
+ */
+async function sendCountdownToChannel(channelId) {
+    if (isRamadanActive()) {
+        console.log('[Scheduler] Ramadan active, skipping countdown for channel', channelId);
+        return;
+    }
+
+    try {
+        const channel = await client.channels.fetch(channelId);
+        if (!channel) {
+            console.error('[Scheduler] Channel not found:', channelId);
+            return;
+        }
+
+        const ramadanInfo = await getDaysUntilRamadan();
+        const daysRemaining = ramadanInfo.days;
+
+        if (daysRemaining > 0) {
+            const hijriDate = await getFormattedHijriDate();
+            const { embed, files } = createCountdownEmbed(daysRemaining, hijriDate);
+            await channel.send({ embeds: [embed], files: files });
+            console.log(`[Scheduler] Guild-specific countdown sent to ${channelId}: ${daysRemaining} days`);
+        }
+    } catch (error) {
+        console.error(`[Scheduler] Error sending guild countdown to ${channelId}:`, error.message);
     }
 }
 
