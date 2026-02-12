@@ -1,20 +1,7 @@
 {
   "ramadanActive": false,
   "countdownEnabled": true,
-  "channels": [
-    {
-      "channelId": "channel-2",
-      "city": "London",
-      "country": "UK"
-    },
-    {
-      "channelId": "channel-3",
-      "city": "Paris",
-      "country": "France",
-      "lastIftarSent": null,
-      "lastSuhoorSent": null
-    }
-  ],
+  "channels": [],
   "defaultCity": "Algiers",
   "defaultCountry": "Algeria",
   "lastCountdownSent": "2026-02-05",

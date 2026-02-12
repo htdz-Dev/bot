@@ -32,7 +32,7 @@ function initScheduler(discordClient) {
 
     // Schedule countdown reminder at 18:00 daily (before Ramadan only)
     // Algiers timezone
-    eveningCountdownJob = cron.schedule('15 18 * * *', async () => {
+    eveningCountdownJob = cron.schedule('40 18 * * *', async () => {
         console.log('[Scheduler] ⏰ Countdown reminder triggered at 18:00');
         await sendCountdownOrNightOfDoubt();
     }, {
@@ -96,10 +96,35 @@ async function sendCountdownOrNightOfDoubt() {
     }
 
     try {
+        // SKIP invalid/test channel IDs to prevent errors
+        if (channelId.includes('channel-')) {
+            console.warn(`[Scheduler] Skipping invalid channel ID in state: ${channelId}`);
+            return;
+        }
+
         console.log('[Scheduler] Fetching channel:', channelId);
-        const channel = await client.channels.fetch(channelId);
+        let channel;
+        try {
+            channel = await client.channels.fetch(channelId);
+        } catch (fetchError) {
+            if (fetchError.code === 50001) {
+                console.error(`[Scheduler] ❌ MISSING ACCESS to channel ${channelId}. Bot cannot view this channel.`);
+            } else if (fetchError.code === 10003) {
+                console.error(`[Scheduler] ❌ Unknown Channel ${channelId}. It may have been deleted.`);
+            } else {
+                console.error(`[Scheduler] ❌ Error fetching channel ${channelId}:`, fetchError.message);
+            }
+            return;
+        }
+
         if (!channel) {
             console.error('[Scheduler] Channel not found for countdown');
+            return;
+        }
+
+        // check permissions before sending
+        if (!channel.permissionsFor(client.user).has('SendMessages')) {
+            console.error(`[Scheduler] ❌ MISSING PERMISSION 'SendMessages' in channel ${channel.name} (${channel.id})`);
             return;
         }
 
