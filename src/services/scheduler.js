@@ -32,23 +32,14 @@ function initScheduler(discordClient) {
 
     // Schedule countdown reminder at 18:00 daily (before Ramadan only)
     // Algiers timezone
-    eveningCountdownJob = cron.schedule('0 18 * * *', async () => {
+    eveningCountdownJob = cron.schedule('40 18 * * *', async () => {
         console.log('[Scheduler] ⏰ Countdown reminder triggered at 18:00');
         await sendCountdownOrNightOfDoubt();
     }, {
         timezone: 'Africa/Algiers'
     });
 
-    // Guild-specific countdown for test guild at 19:28
-    const testChannelId = process.env.CHANNEL_ID;
-    if (testChannelId) {
-        cron.schedule('28 19 * * *', async () => {
-            console.log('[Scheduler] ⏰ Test guild countdown triggered at 19:28');
-            await sendCountdownToChannel(testChannelId);
-        }, {
-            timezone: 'Africa/Algiers'
-        });
-    }
+
 
     // Schedule Imsakiyah image at 4:00 AM daily (During Ramadan)
     imsakiyahJob = cron.schedule('0 4 * * *', async () => {
