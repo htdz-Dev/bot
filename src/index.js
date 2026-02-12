@@ -1,85 +1,10 @@
 require('dotenv').config();
 
-const { Client, GatewayIntentBits, Collection, REST, Routes, MessageFlags } = require('discord.js');
-const { initScheduler, scheduleRamadanMessages } = require('./services/scheduler');
-const { isRamadanActive, getState } = require('./utils/state');
-const ramadanCommand = require('./commands/ramadan');
-const testadhanCommand = require('./commands/testadhan');
-const testiftarimageCommand = require('./commands/testiftarimage');
-const setCityCommand = require('./commands/setcity');
-
-// Validate environment variables
-if (!process.env.DISCORD_TOKEN) {
-    console.error('❌ Error: DISCORD_TOKEN is not set in .env file');
-    process.exit(1);
-}
-
-if (!process.env.GUILD_ID) {
-    console.warn('⚠️ Warning: GUILD_ID is not set in .env file. Bot will register commands for ALL guilds it is in.');
-}
-
-// Create Discord client
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildVoiceStates
-    ]
-});
-
-// Commands collection
-client.commands = new Collection();
-client.commands.set(ramadanCommand.data.name, ramadanCommand);
-client.commands.set(testadhanCommand.data.name, testadhanCommand);
-client.commands.set(testiftarimageCommand.data.name, testiftarimageCommand);
-client.commands.set(setCityCommand.data.name, setCityCommand);
-
-// Register slash commands
-// Register slash commands
-async function registerCommands(guildId = null) {
-    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-    const body = [
-        ramadanCommand.data.toJSON(),
-        testadhanCommand.data.toJSON(),
-        testiftarimageCommand.data.toJSON(),
-        setCityCommand.data.toJSON()
-    ];
-
-    try {
-        if (guildId) {
-            // Register for a specific guild (e.g. on join)
-            console.log(`🔄 Registering commands for guild: ${guildId}`);
-            await rest.put(
-                Routes.applicationGuildCommands(client.user.id, guildId),
-                { body }
-            );
-        } else {
-            // Register for ALL guilds
-            console.log('🔄 Registering slash commands for all guilds...');
-            const guilds = await client.guilds.fetch();
-            console.log(`   - Found ${guilds.size} guilds.`);
-
-            for (const [id, guild] of guilds) {
-                console.log(`   - Registering for ${guild.name} (${id})`);
-                try {
-                    await rest.put(
-                        Routes.applicationGuildCommands(client.user.id, id),
-                        { body }
-                    );
-                } catch (err) {
-                    console.error(`   ❌ Failed to register for ${guild.name}: ${err.message}`);
-                }
-            }
-        }
-
-        console.log('✅ Slash commands registered successfully');
-    } catch (error) {
-        console.error('❌ Error registering commands:', error);
-    }
-}
+const { Client, GatewayIntentBits, Collection, REST, Routes, MessageFlags, Events } = require('discord.js');
+// ... 
 
 // Handle ready event
-client.once('ready', async () => {
+client.once(Events.ClientReady, async () => {
     console.log(`\n🌙 ═══════════════════════════════════════`);
     console.log(`   بوت رمضان المبارك`);
     console.log(`   Logged in as: ${client.user.tag}`);
